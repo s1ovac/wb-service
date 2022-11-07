@@ -18,20 +18,17 @@ type Publish struct {
 func New() *Publish {
 	return &Publish{
 		clusterID: "test-cluster",
-		clientID:  "order-client2",
+		clientID:  "order-publisher",
 		channel:   "order-notification",
 	}
 }
 
-func InitConnect(pb *Publish) stan.Conn {
+func (pb *Publish) DropMessage() error {
 	sc, err := stan.Connect(pb.clusterID, pb.clientID)
 	if err != nil {
-		return nil
+		return err
 	}
-	return sc
-}
-
-func (pb *Publish) DropMessage(sc stan.Conn) error {
+	defer sc.Close()
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Println("Enter path to JSON file")
@@ -49,7 +46,6 @@ func (pb *Publish) DropMessage(sc stan.Conn) error {
 				return fmt.Errorf("problem with publish: %s", err)
 			}
 		}
-		sc.Close()
 		return nil
 	}
 }
