@@ -1,10 +1,11 @@
 package subscribe
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/nats-io/stan.go"
+	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
 )
 
 type Subscribe struct {
@@ -28,14 +29,18 @@ func (sb *Subscribe) SubscribeToChannel() error {
 	}
 	defer sc.Close()
 
-	sub, err := sc.Subscribe(sb.channel, func(m *stan.Msg) {
-		fmt.Printf("Received a message: %s\n", string(m.Data))
-	})
-
+	_, err = sc.Subscribe(sb.channel, handleOrder, stan.StartWithLastReceived())
 	if err != nil {
 		return fmt.Errorf("problem with reading channel: %s", err)
 	}
-	time.Sleep(30 * time.Second)
-	sub.Unsubscribe()
 	return nil
+}
+
+func handleOrder(orderMsg *stan.Msg) {
+	newOrder := order.Order{}
+
+	if err := json.Unmarshal(orderMsg.Data, &newOrder); err != nil {
+		return
+	}
+
 }

@@ -36,7 +36,8 @@ CREATE TABLE "item"(
     "nm_id" BIGINT NOT NULL,
     "brand" VARCHAR(50) NOT NULL,
     "status" INTEGER NOT NULL,
-    FOREIGN KEY ("order_id") REFERENCES "order"("order_uid")
+    FOREIGN KEY ("order_id") REFERENCES "order"("order_uid"),
+    FOREIGN KEY ("track_number") REFERENCES "order"("track_number")
 );
 CREATE TABLE "payment"(
     "order_id" UUID NOT NULL,
