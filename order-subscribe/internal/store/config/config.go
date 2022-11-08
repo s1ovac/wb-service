@@ -7,8 +7,8 @@ import (
 )
 
 type StorageConfig struct {
-	Port     string `toml:"host"`
-	Host     string `toml:"port"`
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
 	DataBase string `toml:"database"`
 	Username string `toml:"username"`
 	Password string `toml:"password"`
