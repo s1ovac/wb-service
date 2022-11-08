@@ -1,12 +1,12 @@
 package model
 
 type Delivery struct {
-	OrderID string
-	Name    string
-	Phone   string
-	Zip     string
-	City    string
-	Address string
-	Region  string
-	Email   string
+	OrderID string `json:""`
+	Name    string `json:""`
+	Phone   string `json:""`
+	Zip     string `json:""`
+	City    string `json:""`
+	Address string `json:""`
+	Region  string `json:""`
+	Email   string `json:""`
 }

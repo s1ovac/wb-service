@@ -1,17 +1,17 @@
 package model
 
 type Item struct {
-	ID          int
-	OrderID     string
-	ChrtID      int
-	TrackNumber string
-	Price       float64
-	Rid         string
-	Name        string
-	Sale        int
-	Size        string
-	TotalPrice  float64
-	NmID        int
-	Brand       string
-	Status      int
+	ID          int     `json:""`
+	OrderID     string  `json:""`
+	ChrtID      int     `json:""`
+	TrackNumber string  `json:""`
+	Price       float64 `json:""`
+	Rid         string  `json:""`
+	Name        string  `json:""`
+	Sale        int     `json:""`
+	Size        string  `json:""`
+	TotalPrice  float64 `json:""`
+	NmID        int     `json:""`
+	Brand       string  `json:""`
+	Status      int     `json:""`
 }

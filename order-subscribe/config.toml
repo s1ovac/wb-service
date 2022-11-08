@@ -1,0 +1,8 @@
+bind_addr = ":8080"
+log_level = "debug"
+
+host = "localhost"
+port = "5432"
+database = "wb-service"
+username = "s1ovac"
+password = "Qwerqwerasd228"

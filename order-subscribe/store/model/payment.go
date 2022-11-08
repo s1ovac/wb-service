@@ -1,15 +1,15 @@
 package model
 
 type Payment struct {
-	OrderID      string
-	Transaction  string
-	RequestID    string
-	Currency     string
-	Provider     string
-	Amount       string
-	PaymentDT    int
-	Bank         string
-	DeliveryCost float64
-	GoodsTotal   int
-	CustomFee    float64
+	OrderID      string  `json:""`
+	Transaction  string  `json:""`
+	RequestID    string  `json:""`
+	Currency     string  `json:""`
+	Provider     string  `json:""`
+	Amount       string  `json:""`
+	PaymentDT    int     `json:""`
+	Bank         string  `json:""`
+	DeliveryCost float64 `json:""`
+	GoodsTotal   int     `json:""`
+	CustomFee    float64 `json:""`
 }
