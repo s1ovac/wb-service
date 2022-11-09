@@ -49,9 +49,26 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 			) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		`
+		qPayment = `
+		INSERT INTO "payment" (
+			"transaction", 
+			"request_id", 
+			"currency", 
+			"provider", 
+			"amount", 
+			"payment_dt", 
+			"bank",
+			"delivery_cost",
+			"goods_total",
+			"custom_fee"
+			) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`
 	)
 	batch := &pgx.Batch{}
-	batch.Queue(qOrder, order.TrackNumber,
+	batch.Queue(
+		qOrder,
+		order.TrackNumber,
 		order.Entry,
 		order.Locale,
 		order.InternalSignature,
@@ -60,9 +77,31 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.ShardKey,
 		order.SmID,
 		order.DateCreated,
-		order.OofShard)
-	batch.Queue(qDelivery, "q2", 2)
-	batch.Queue("insert into ledger(description, amount) values($1, $2)", "q3", 3)
+		order.OofShard,
+	)
+	batch.Queue(
+		qDelivery,
+		order.Delivery.Name,
+		order.Delivery.Phone,
+		order.Delivery.Zip,
+		order.Delivery.City,
+		order.Delivery.Address,
+		order.Delivery.Region,
+		order.Delivery.Email,
+	)
+	batch.Queue(
+		qPayment,
+		order.Payment.Transaction,
+		order.Payment.RequestID,
+		order.Payment.Currency,
+		order.Payment.Provider,
+		order.Payment.Amount,
+		order.Payment.PaymentDT,
+		order.Payment.Bank,
+		order.Payment.DeliveryCost,
+		order.Payment.GoodsTotal,
+		order.Payment.CustomFee,
+	)
 	br := conn.SendBatch(ctx, batch)
 	br.Close()
 
