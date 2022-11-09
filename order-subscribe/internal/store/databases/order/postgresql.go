@@ -2,42 +2,56 @@ package order
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"log"
 
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/item"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
 )
 
 type repository struct {
 	client postgresql.CLient
+	batch  *pgx.Batch
 }
 
 func NewRepository(client postgresql.CLient) Repository {
 	return &repository{
 		client: client,
+		batch:  &pgx.Batch{},
 	}
 }
 
-func (r *repository) Create(ctx context.Context, order *Order) error {
-	q := `
-	INSERT INTO "order" (
-		"track_number", 
-		"entry", 
-		"locale", 
-		"internal_signature", 
-		"customer_id", 
-		"delivery_service", 
-		"shardkey", 
-		"sm_id", 
-		"date_created", 
-		"oof_shard" ) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-	RETURNING "order_uid"
-	`
-	if err := r.client.QueryRow(ctx, q, order.TrackNumber,
+func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) error {
+	var (
+		qOrder = `
+		INSERT INTO "order" (
+			"track_number", 
+			"entry", 
+			"locale", 
+			"internal_signature", 
+			"customer_id", 
+			"delivery_service", 
+			"shardkey", 
+			"sm_id", 
+			"date_created", 
+			"oof_shard" ) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+		RETURNING "order_uid"
+		`
+		qDelivery = `
+		INSERT INTO "delivery" (
+			"name", 
+			"phone", 
+			"zip", 
+			"city", 
+			"address", 
+			"region", 
+			"email"
+			) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`
+	)
+	batch := &pgx.Batch{}
+	batch.Queue(qOrder, order.TrackNumber,
 		order.Entry,
 		order.Locale,
 		order.InternalSignature,
@@ -46,17 +60,32 @@ func (r *repository) Create(ctx context.Context, order *Order) error {
 		order.ShardKey,
 		order.SmID,
 		order.DateCreated,
-		order.OofShard,
-	).Scan(&order.OrderUID); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			pgErr = err.(*pgconn.PgError)
-			newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail %s, Where %s, Code %s, SQLState %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
-			log.Println(newErr)
-			return newErr
-		}
-		return err
-	}
+		order.OofShard)
+	batch.Queue(qDelivery, "q2", 2)
+	batch.Queue("insert into ledger(description, amount) values($1, $2)", "q3", 3)
+	br := conn.SendBatch(ctx, batch)
+	br.Close()
+
+	// if err := r.client.QueryRow(ctx, q, order.TrackNumber,
+	// 	order.Entry,
+	// 	order.Locale,
+	// 	order.InternalSignature,
+	// 	order.CustomerID,
+	// 	order.DeliveryService,
+	// 	order.ShardKey,
+	// 	order.SmID,
+	// 	order.DateCreated,
+	// 	order.OofShard,
+	// ).Scan(&order.OrderUID); err != nil {
+	// 	var pgErr *pgconn.PgError
+	// 	if errors.As(err, &pgErr) {
+	// 		pgErr = err.(*pgconn.PgError)
+	// 		newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail %s, Where %s, Code %s, SQLState %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
+	// 		log.Println(newErr)
+	// 		return newErr
+	// 	}
+	// 	return err
+	// }
 	return nil
 }
 
