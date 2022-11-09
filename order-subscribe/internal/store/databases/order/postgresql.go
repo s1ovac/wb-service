@@ -82,7 +82,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		p."bank",
 		p."delivery_cost",
 		p."goods_total",
-		p."custom_fee"
+		p."custom_fee",
 		o."locale",
 		o."internal_signature",
 		o."customer_id",
@@ -90,12 +90,12 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		o."shardkey", 
 		o."sm_id", 
 		o."date_created", 
-		o."oof_shard",
+		o."oof_shard"
 	FROM 
 		"order" AS o 
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
-		JOIN "item" AS i ON p."order_id" = i."order_id"
+		RIGHT JOIN "item" AS i ON p."order_id" = i."order_id"
 	WHERE o.order_uid = $1
 	`
 	var ord Order
@@ -140,7 +140,6 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		"order" AS o 
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
-		JOIN "item" AS i ON p."order_id" = i."order_id";
 	`
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
@@ -234,7 +233,3 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 	}
 	return orders, nil
 }
-
-// 0021e010-97ab-46db-8600-f7604ab52f92
-
-// 742fee6e-d685-4c2b-a3a8-249d728f3d7f
