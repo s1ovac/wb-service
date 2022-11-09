@@ -23,11 +23,9 @@ func main() {
 		log.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
-	orders, err := rep.FindAll(context.TODO())
+	order, err := rep.FindOne(context.TODO(), "0021e010-97ab-46db-8600-f7604ab52f92")
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, order := range orders {
-		fmt.Println(order)
-	}
+	fmt.Println(order)
 }

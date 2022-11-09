@@ -99,9 +99,82 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 	WHERE o.order_uid = $1
 	`
 	var ord Order
-	if err := r.client.QueryRow(ctx, q, id).Scan(&ord.OrderUID, &ord.TrackNumber, &ord.Entry, &ord.Locale, &ord.InternalSignature, &ord.CustomerID, &ord.DeliveryService, &ord.ShardKey, &ord.SmID, &ord.DateCreated, &ord.OofShard); err != nil {
+	if err := r.client.QueryRow(ctx, q, id).Scan(
+		&ord.OrderUID,
+		&ord.TrackNumber,
+		&ord.Entry,
+		&ord.Delivery.Name,
+		&ord.Delivery.Phone,
+		&ord.Delivery.Zip,
+		&ord.Delivery.City,
+		&ord.Delivery.Address,
+		&ord.Delivery.Region,
+		&ord.Delivery.Email,
+		&ord.Payment.Transaction,
+		&ord.Payment.RequestID,
+		&ord.Payment.Currency,
+		&ord.Payment.Provider,
+		&ord.Payment.Amount,
+		&ord.Payment.PaymentDT,
+		&ord.Payment.Bank,
+		&ord.Payment.DeliveryCost,
+		&ord.Payment.GoodsTotal,
+		&ord.Payment.CustomFee,
+		&ord.Locale,
+		&ord.InternalSignature,
+		&ord.CustomerID,
+		&ord.DeliveryService,
+		&ord.ShardKey,
+		&ord.SmID,
+		&ord.DateCreated,
+		&ord.OofShard,
+	); err != nil {
 		return Order{}, err
 	}
+	iq := `
+		SELECT 
+			"id", 
+			"chrt_id",
+			"track_number",
+			"price",
+			"rid",
+			"name",
+			"sale",
+			"size",
+			"total_price",
+			"nm_id",
+			"brand",
+			"status"
+		FROM "item" AS i
+		WHERE "order_id" = $1
+		`
+	itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
+	if err != nil {
+		return Order{}, err
+	}
+	items := make([]item.Item, 0)
+	for itemRows.Next() {
+		var item item.Item
+		err = itemRows.Scan(
+			&item.ID,
+			&item.ChrtID,
+			&item.TrackNumber,
+			&item.Price,
+			&item.Rid,
+			&item.Name,
+			&item.Sale,
+			&item.Size,
+			&item.TotalPrice,
+			&item.NmID,
+			&item.Brand,
+			&item.Status,
+		)
+		if err != nil {
+			return Order{}, err
+		}
+		items = append(items, item)
+	}
+	ord.Items = items
 	return ord, nil
 }
 
