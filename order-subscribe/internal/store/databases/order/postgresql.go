@@ -49,7 +49,7 @@ func (r *repository) Create(ctx context.Context, order *Order) error {
 		order.OofShard,
 	).Scan(&order.OrderUID); err != nil {
 		var pgErr *pgconn.PgError
-		if errors.Is(err, pgErr) {
+		if errors.As(err, &pgErr) {
 			pgErr = err.(*pgconn.PgError)
 			newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail %s, Where %s, Code %s, SQLState %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
 			log.Println(newErr)
