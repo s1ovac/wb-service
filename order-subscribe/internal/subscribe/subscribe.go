@@ -3,6 +3,7 @@ package subscribe
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/nats-io/stan.go"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
@@ -22,25 +23,22 @@ func New() *Subscribe {
 	}
 }
 
-func (sb *Subscribe) SubscribeToChannel() error {
+func (sb *Subscribe) SubscribeToChannel() (*order.Order, error) {
 	sc, err := stan.Connect(sb.clusterID, sb.clientID)
+	var newOrder order.Order
 	if err != nil {
-		return fmt.Errorf("problem with connecting to channel: %s", err)
+		return nil, fmt.Errorf("problem with connecting to channel: %s", err)
 	}
 	defer sc.Close()
 
-	_, err = sc.Subscribe(sb.channel, handleOrder, stan.StartWithLastReceived())
+	sub, err := sc.Subscribe(sb.channel, func(orderMsg *stan.Msg) {
+		if err := json.Unmarshal(orderMsg.Data, &newOrder); err != nil {
+			log.Fatalf("error occured parsing json file: %s", err)
+		}
+	}, stan.StartWithLastReceived())
 	if err != nil {
-		return fmt.Errorf("problem with reading channel: %s", err)
+		return nil, fmt.Errorf("problem with reading channel: %s", err)
 	}
-	return nil
-}
-
-func handleOrder(orderMsg *stan.Msg) {
-	newOrder := order.Order{}
-
-	if err := json.Unmarshal(orderMsg.Data, &newOrder); err != nil {
-		return
-	}
-
+	sub.Unsubscribe()
+	return &newOrder, nil
 }

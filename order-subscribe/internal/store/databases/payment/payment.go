@@ -6,7 +6,7 @@ type Payment struct {
 	RequestID    string  `json:"request_id"`
 	Currency     string  `json:"currency"`
 	Provider     string  `json:"provider"`
-	Amount       string  `json:"amount"`
+	Amount       int     `json:"amount"`
 	PaymentDT    int     `json:"payment_dt"`
 	Bank         string  `json:"bank"`
 	DeliveryCost float64 `json:"delivery_cost"`
