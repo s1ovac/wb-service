@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
@@ -20,12 +19,15 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg := config.NewConfig()
-	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfg)
+	conn, err := postgresql.NewClient(context.TODO(), 3, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	rep := order.NewRepository(postgreSQL)
-	err = rep.Create(context.TODO(), newOrder, &pgx.Conn{})
+	rep := order.NewRepository(conn)
+	err = rep.Create(context.TODO(), newOrder, conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 	*newOrder, err = rep.FindOne(context.TODO(), newOrder.OrderUID)
 	if err != nil {
 		log.Fatal(err)
