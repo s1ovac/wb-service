@@ -39,6 +39,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		`
 		qDelivery = `
 		INSERT INTO "delivery" (
+			"order_id",
 			"name", 
 			"phone", 
 			"zip", 
@@ -47,10 +48,11 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 			"region", 
 			"email"
 			) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		`
 		qPayment = `
 		INSERT INTO "payment" (
+			"order_id",
 			"transaction", 
 			"request_id", 
 			"currency", 
@@ -62,11 +64,15 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 			"goods_total",
 			"custom_fee"
 			) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		`
 	)
-	batch := &pgx.Batch{}
-	batch.Queue(
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(
+		ctx,
 		qOrder,
 		order.TrackNumber,
 		order.Entry,
@@ -79,8 +85,13 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.DateCreated,
 		order.OofShard,
 	)
-	batch.Queue(
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(
+		ctx,
 		qDelivery,
+		order.OrderUID,
 		order.Delivery.Name,
 		order.Delivery.Phone,
 		order.Delivery.Zip,
@@ -89,8 +100,13 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.Delivery.Region,
 		order.Delivery.Email,
 	)
-	batch.Queue(
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(
+		ctx,
 		qPayment,
+		order.OrderUID,
 		order.Payment.Transaction,
 		order.Payment.RequestID,
 		order.Payment.Currency,
@@ -102,8 +118,10 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.Payment.GoodsTotal,
 		order.Payment.CustomFee,
 	)
-	br := conn.SendBatch(ctx, batch)
-	br.Close()
+	if err != nil {
+		return err
+	}
+	tx.Commit(ctx)
 
 	// if err := r.client.QueryRow(ctx, q, order.TrackNumber,
 	// 	order.Entry,
