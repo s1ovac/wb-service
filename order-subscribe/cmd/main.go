@@ -32,10 +32,10 @@ func main() {
 		logger.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
-	err = rep.Create(context.TODO(), newOrder, postgreSQL)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// err = rep.Create(context.TODO(), newOrder, postgreSQL)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 	// orders, err := rep.FindAll(context.TODO())
 	// if err != nil {
 	// 	logger.Fatal(err)
