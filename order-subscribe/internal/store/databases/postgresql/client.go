@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/s1ovac/order-subscribe/internal/pkg/utils"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 )
@@ -19,13 +20,13 @@ type CLient interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func NewClient(ctx context.Context, maxAttempts int, sc *config.StorageConfig) (conn *pgx.Conn, err error) {
+func NewClient(ctx context.Context, maxAttempts int, sc *config.StorageConfig) (pool *pgxpool.Pool, err error) {
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", sc.Username, sc.Password, sc.Host, sc.Port, sc.DataBase)
 	err = utils.DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
-		conn, err = pgx.Connect(ctx, dsn)
+		pool, err = pgxpool.Connect(ctx, dsn)
 		if err != nil {
 			return err
 		}
@@ -36,5 +37,5 @@ func NewClient(ctx context.Context, maxAttempts int, sc *config.StorageConfig) (
 		log.Fatal("error occured connection to postgresql")
 	}
 
-	return conn, nil
+	return pool, nil
 }

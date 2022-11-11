@@ -2,11 +2,9 @@ package order
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/item"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
 )
@@ -22,7 +20,7 @@ func NewRepository(client postgresql.CLient) Repository {
 	}
 }
 
-func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) error {
+func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Pool) error {
 	var (
 		qOrder = `
 		INSERT INTO "order" (
@@ -83,14 +81,13 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 			"brand",
 			"status"
 			) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) `
 	)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	if err := tx.QueryRow(
+	err = tx.QueryRow(
 		ctx,
 		qOrder,
 		order.TrackNumber,
@@ -103,30 +100,10 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.SmID,
 		order.DateCreated,
 		order.OofShard,
-	).Scan(&order.OrderUID); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			pgErr = err.(*pgconn.PgError)
-			newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail: %s, Where: %s, Code: %s, SQLState: %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
-			return newErr
-		}
+	).Scan(&order.OrderUID)
+	if err != nil {
 		return err
 	}
-
-	// row := tx.QueryRow(
-	// 	ctx,
-	// 	qOrder,
-	// 	order.TrackNumber,
-	// 	order.Entry,
-	// 	order.Locale,
-	// 	order.InternalSignature,
-	// 	order.CustomerID,
-	// 	order.DeliveryService,
-	// 	order.ShardKey,
-	// 	order.SmID,
-	// 	order.DateCreated,
-	// 	order.OofShard,
-	// ).Scan(&order.OrderUID)
 	_, err = tx.Exec(
 		ctx,
 		qDelivery,
@@ -182,26 +159,8 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		}
 	}
 	tx.Commit(ctx)
-	// if err := r.client.QueryRow(ctx, q, order.TrackNumber,
-	// 	order.Entry,
-	// 	order.Locale,
-	// 	order.InternalSignature,
-	// 	order.CustomerID,
-	// 	order.DeliveryService,
-	// 	order.ShardKey,
-	// 	order.SmID,
-	// 	order.DateCreated,
-	// 	order.OofShard,
-	// ).Scan(&order.OrderUID); err != nil {
-	// 	var pgErr *pgconn.PgError
-	// 	if errors.As(err, &pgErr) {
-	// 		pgErr = err.(*pgconn.PgError)
-	// 		newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail %s, Where %s, Code %s, SQLState %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
-	// 		log.Println(newErr)
-	// 		return newErr
-	// 	}
-	// 	return err
-	// }
+	tx.Commit(ctx)
+
 	return nil
 }
 
@@ -358,12 +317,12 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		"order" AS o 
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
-		JOIN "item" AS i ON p."order_id" = i."order_id"
 	`
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	orders := make([]Order, 0)
 	for rows.Next() {
 		var ord Order
@@ -401,7 +360,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 			return nil, err
 		}
 
-		itemQuery := `
+		iq := `
 		SELECT 
 			"id", 
 			"chrt_id",
@@ -418,10 +377,11 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
-		itemRows, err := r.client.Query(ctx, itemQuery, ord.OrderUID)
+		itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 		if err != nil {
 			return nil, err
 		}
+		defer itemRows.Close()
 		items := make([]item.Item, 0)
 		for itemRows.Next() {
 			var item item.Item
@@ -448,7 +408,6 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		ord.Items = items
 
 		orders = append(orders, ord)
-
 	}
 	return orders, nil
 }
