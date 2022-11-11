@@ -2,16 +2,18 @@ package order
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/item"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
 )
 
 type repository struct {
 	client postgresql.CLient
-	batch  *pgx.Batch
+	logger *logging.Logger
 }
 
 func NewRepository(client postgresql.CLient) Repository {
@@ -87,6 +89,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qOrder)))
 	err = tx.QueryRow(
 		ctx,
 		qOrder,
@@ -104,6 +107,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qDelivery)))
 	_, err = tx.Exec(
 		ctx,
 		qDelivery,
@@ -119,6 +123,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qPayment)))
 	_, err = tx.Exec(
 		ctx,
 		qPayment,
@@ -138,6 +143,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 		return err
 	}
 	for _, it := range order.Items {
+		r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qItem)))
 		_, err = tx.Exec(
 			ctx,
 			qItem,
@@ -202,6 +208,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		RIGHT JOIN "item" AS i ON p."order_id" = i."order_id"
 	WHERE o.order_uid = $1
 	`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	var ord Order
 	if err := r.client.QueryRow(ctx, q, id).Scan(
 		&ord.OrderUID,
@@ -252,6 +259,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 	itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 	if err != nil {
 		return Order{}, err
@@ -318,6 +326,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
 	`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -377,6 +386,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
+		r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 		itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 		if err != nil {
 			return nil, err
@@ -410,4 +420,8 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		orders = append(orders, ord)
 	}
 	return orders, nil
+}
+
+func formatQuery(q string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(q, "\t", ""), "\n", " ")
 }

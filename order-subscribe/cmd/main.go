@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
@@ -13,11 +14,13 @@ import (
 )
 
 func main() {
+	router := httprouter.New()
 	sb := subscribe.New()
 	newOrder, err := sb.SubscribeToChannel()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	cfg := config.NewConfig()
 	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfg)
 	if err != nil {
@@ -28,7 +31,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	orders, err := rep.FindAll(context.TODO())
 	if err != nil {
 		log.Fatal(err)
@@ -38,6 +40,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println(c.Cache(newOrder.OrderUID))
 	fmt.Println(orders)
 }
