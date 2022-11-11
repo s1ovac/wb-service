@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/s1ovac/order-subscribe/internal/cache"
@@ -11,6 +13,7 @@ import (
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
 	"github.com/s1ovac/order-subscribe/internal/subscribe"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -22,9 +25,9 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-
-	cfg := config.NewConfig()
-	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfg)
+	cfgDataBase := config.NewStorageConfig()
+	cfgServer := config.NewServerConfig()
+	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfgDataBase)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -33,14 +36,29 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	orders, err := rep.FindAll(context.TODO())
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// orders, err := rep.FindAll(context.TODO())
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 	c := cache.NewCache(newOrder)
 	err = c.InitCache(newOrder.OrderUID)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	fmt.Println(orders)
+	orderHandler := order.NewHandler(&rep, logger)
+	orderHandler.Register(router)
+	start(router, logger, cfgServer)
+}
+
+func start(router *httprouter.Router, logger *logrus.Logger, config *config.ServerConfig) {
+	listener, err := net.Listen(config.Protocol, config.BindAddress)
+	if err != nil {
+		panic(err)
+	}
+	server := http.Server{
+		Handler:      router,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	logger.Fatal(server.Serve(listener))
 }
