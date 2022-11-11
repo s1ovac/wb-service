@@ -19,7 +19,6 @@ type repository struct {
 func NewRepository(client postgresql.CLient) Repository {
 	return &repository{
 		client: client,
-		batch:  &pgx.Batch{},
 	}
 }
 
