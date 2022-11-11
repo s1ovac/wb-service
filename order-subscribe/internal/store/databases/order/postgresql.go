@@ -359,6 +359,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		"order" AS o 
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
+		JOIN "item" AS i ON p."order_id" = i."order_id"
 	`
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
@@ -401,7 +402,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 			return nil, err
 		}
 
-		iq := `
+		itemQuery := `
 		SELECT 
 			"id", 
 			"chrt_id",
@@ -418,7 +419,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
-		itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
+		itemRows, err := r.client.Query(ctx, itemQuery, ord.OrderUID)
 		if err != nil {
 			return nil, err
 		}
