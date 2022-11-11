@@ -2,7 +2,10 @@ package order
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/item"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
@@ -66,12 +69,29 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 			) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		`
+		qItem = `
+		INSERT INTO "item" (
+			"order_id",
+			"chrt_id", 
+			"track_number", 
+			"price", 
+			"rid", 
+			"name", 
+			"sale", 
+			"size",
+			"total_price",
+			"nm_id",
+			"brand",
+			"status"
+			) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		`
 	)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(
+	if err := tx.QueryRow(
 		ctx,
 		qOrder,
 		order.TrackNumber,
@@ -84,10 +104,30 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 		order.SmID,
 		order.DateCreated,
 		order.OofShard,
-	)
-	if err != nil {
+	).Scan(&order.OrderUID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			pgErr = err.(*pgconn.PgError)
+			newErr := fmt.Errorf(fmt.Sprintf("SQL Error: %s, Detail: %s, Where: %s, Code: %s, SQLState: %s", pgErr.Message, pgErr.Detail, pgErr.Where, pgErr.Code, pgErr.SQLState()))
+			return newErr
+		}
 		return err
 	}
+
+	// row := tx.QueryRow(
+	// 	ctx,
+	// 	qOrder,
+	// 	order.TrackNumber,
+	// 	order.Entry,
+	// 	order.Locale,
+	// 	order.InternalSignature,
+	// 	order.CustomerID,
+	// 	order.DeliveryService,
+	// 	order.ShardKey,
+	// 	order.SmID,
+	// 	order.DateCreated,
+	// 	order.OofShard,
+	// ).Scan(&order.OrderUID)
 	_, err = tx.Exec(
 		ctx,
 		qDelivery,
@@ -121,8 +161,28 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgx.Conn) e
 	if err != nil {
 		return err
 	}
+	for _, it := range order.Items {
+		_, err = tx.Exec(
+			ctx,
+			qItem,
+			order.OrderUID,
+			it.ChrtID,
+			order.TrackNumber,
+			it.Price,
+			it.Rid,
+			it.Name,
+			it.Sale,
+			it.Size,
+			it.TotalPrice,
+			it.NmID,
+			it.Brand,
+			it.Status,
+		)
+		if err != nil {
+			return err
+		}
+	}
 	tx.Commit(ctx)
-
 	// if err := r.client.QueryRow(ctx, q, order.TrackNumber,
 	// 	order.Entry,
 	// 	order.Locale,

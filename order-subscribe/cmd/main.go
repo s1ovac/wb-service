@@ -28,15 +28,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	*newOrder, err = rep.FindOne(context.TODO(), newOrder.OrderUID)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// *newOrder, err = rep.FindOne(context.TODO(), newOrder.OrderUID)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	c := cache.NewCache(newOrder)
 	err = c.InitCache(newOrder.OrderUID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(c.Cache(newOrder.OrderUID))
-	fmt.Println(newOrder)
 }

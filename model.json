@@ -1,6 +1,6 @@
 {
-  "order_uid": "0021e010-97ab-46db-8600-f7604ab52f93",
-  "track_number": "WBILMTESTTRACK3",
+  "order_uid": "",
+  "track_number": "WBILMTESTTRACK6",
   "entry": "WBIL",
   "delivery": {
     "name": "Test Testov",
@@ -26,7 +26,7 @@
   "items": [
     {
       "chrt_id": 9934930,
-      "track_number": "WBILMTESTTRACK3",
+      "track_number": "WBILMTESTTRACK6",
       "price": 453,
       "rid": "ab4219087a764ae0btest",
       "name": "Mascaras",
@@ -36,6 +36,19 @@
       "nm_id": 2389212,
       "brand": "Vivienne Sabo",
       "status": 202
+    },
+    {
+      "chrt_id": 9934932,
+      "track_number": "WBILMTESTTRACK6",
+      "price": 501,
+      "rid": "ab4219087a764ae0btest2",
+      "name": "Mascaras2",
+      "sale": 31,
+      "size": "1",
+      "total_price": 319,
+      "nm_id": 2389213,
+      "brand": "Vivienne Sabo2",
+      "status": 203
     }
   ],
   "locale": "en",
