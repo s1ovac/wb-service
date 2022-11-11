@@ -5,7 +5,7 @@ import (
 )
 
 func TestConfigToStorage(t *testing.T) {
-	cf := NewConfig()
+	cf := NewStorageConfig()
 	if cf == nil {
 		t.Fail()
 	}

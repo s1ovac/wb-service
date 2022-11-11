@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Order</title>
+  </head>
+  <table class="table_adaptive_classic">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Track Number</th>
+        <th>Entry</th>
+        <th>Delivery</th>
+        <th>Payment</th>
+        <th>Items</th>
+        <th>Locale</th>
+        <th>InternalSignature</th>
+        <th>CustomerID</th>
+        <th>DeliveryService</th>
+        <th>ShardKey</th>
+        <th>SmID</th>
+        <th>DateCreated</th>
+        <th>OofShard</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td data-label="Order ID">{{.OrderUID}}</td>
+        <td data-label="Track Number">{{.TrackNumber}}</td>
+        <td data-label="Track Number">{{.Entry}}</td>
+        <td data-label="Track Number">
+            <table class="table_adaptive_classic">
+                <tr>
+                    <tr>{{.Delivery.OrderID}}</tr>
+                    <tr>{{.Delivery.Name}}</tr>
+                    <tr>{{.Delivery.Phone}}</tr>
+                    <tr>{{.Delivery.Zip}}</tr>
+                    <tr>{{.Delivery.City}}</tr>
+                    <tr>{{.Delivery.Address}}</tr>
+                    <tr>{{.Delivery.Region}}</tr>
+                    <tr>{{.Delivery.Email}}</tr>
+                </tr>
+            </table>
+        </td>
+        <td data-label="Track Number">{{.Payment}}</td>
+        <td data-label="Track Number">{{.Items}}</td>
+        <td data-label="Track Number">{{.Locale}}</td>
+        <td data-label="Track Number">{{.InternalSignature}}</td>
+        <td data-label="Track Number">{{.CustomerID}}</td>
+        <td data-label="Track Number">{{.DeliveryService}}</td>
+        <td data-label="Track Number">{{.ShardKey}}</td>
+        <td data-label="Track Number">{{.SmID}}</td>
+        <td data-label="Track Number">{{.DateCreated}}</td>
+        <td data-label="Track Number">{{.OofShard}}</td>
+      </tr>
+    </tbody>
+  </table>
+</html>

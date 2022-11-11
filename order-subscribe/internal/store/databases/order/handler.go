@@ -2,7 +2,7 @@ package order
 
 import (
 	"context"
-	"encoding/json"
+	"html/template"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -35,12 +35,18 @@ func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params 
 		w.WriteHeader(400)
 		h.logger.Fatal(err)
 	}
-
-	allBytes, err := json.Marshal(order)
+	html, err := template.ParseFiles("/home/s1ovac/github.com/wb-service/order-subscribe/view/view.html")
 	if err != nil {
-		h.logger.Fatal(err)
+		h.logger.Fatal("Can't parse html view file")
 	}
+	// allBytes, err := json.Marshal(order)
+	// if err != nil {
+	// 	h.logger.Fatal(err)
+	// }
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(allBytes)
+	err = html.Execute(w, order)
+	if err != nil {
+		h.logger.Fatal("Can't execute html view file")
+	}
 }

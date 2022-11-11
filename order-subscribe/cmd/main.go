@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
-	"github.com/s1ovac/order-subscribe/internal/subscribe"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,11 +18,11 @@ func main() {
 	logger := logging.Init()
 	router := httprouter.New()
 	logger.Info("create router")
-	sb := subscribe.New(logger)
-	newOrder, err := sb.SubscribeToChannel()
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// sb := subscribe.New(logger)
+	// newOrder, err := sb.SubscribeToChannel()
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 	cfgDataBase := config.NewStorageConfig()
 	cfgServer := config.NewServerConfig()
 	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfgDataBase)
@@ -40,11 +38,11 @@ func main() {
 	// if err != nil {
 	// 	logger.Fatal(err)
 	// }
-	c := cache.NewCache(newOrder)
-	err = c.InitCache(newOrder.OrderUID)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// c := cache.NewCache(newOrder)
+	// err = c.InitCache(newOrder.OrderUID)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 	orderHandler := order.NewHandler(&rep, logger)
 	orderHandler.Register(router)
 	start(router, logger, cfgServer)
