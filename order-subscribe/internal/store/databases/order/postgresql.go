@@ -9,16 +9,18 @@ import (
 	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/item"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
+	"github.com/sirupsen/logrus"
 )
 
 type repository struct {
 	client postgresql.CLient
-	logger *logging.Logger
+	logger *logrus.Logger
 }
 
 func NewRepository(client postgresql.CLient) Repository {
 	return &repository{
 		client: client,
+		logger: logging.Init(),
 	}
 }
 
@@ -142,8 +144,8 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qItem)))
 	for _, it := range order.Items {
-		r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qItem)))
 		_, err = tx.Exec(
 			ctx,
 			qItem,
@@ -164,7 +166,6 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 			return err
 		}
 	}
-	tx.Commit(ctx)
 	tx.Commit(ctx)
 
 	return nil
@@ -208,7 +209,6 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		RIGHT JOIN "item" AS i ON p."order_id" = i."order_id"
 	WHERE o.order_uid = $1
 	`
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	var ord Order
 	if err := r.client.QueryRow(ctx, q, id).Scan(
 		&ord.OrderUID,
@@ -259,7 +259,6 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 	itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 	if err != nil {
 		return Order{}, err
@@ -326,7 +325,6 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
 	`
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -386,7 +384,6 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
-		r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 		itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 		if err != nil {
 			return nil, err

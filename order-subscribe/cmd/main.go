@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/s1ovac/order-subscribe/internal/cache"
+	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
@@ -14,31 +14,33 @@ import (
 )
 
 func main() {
+	logger := logging.Init()
 	router := httprouter.New()
-	sb := subscribe.New()
+	logger.Info("create router")
+	sb := subscribe.New(logger)
 	newOrder, err := sb.SubscribeToChannel()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	cfg := config.NewConfig()
 	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfg)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
 	err = rep.Create(context.TODO(), newOrder, postgreSQL)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	orders, err := rep.FindAll(context.TODO())
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	c := cache.NewCache(newOrder)
 	err = c.InitCache(newOrder.OrderUID)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	fmt.Println(orders)
 }

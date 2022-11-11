@@ -6,24 +6,29 @@ import (
 	"log"
 
 	"github.com/nats-io/stan.go"
+	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
+	"github.com/sirupsen/logrus"
 )
 
 type Subscribe struct {
 	clusterID string
 	clientID  string
 	channel   string
+	logger    *logrus.Logger
 }
 
-func New() *Subscribe {
+func New(logger *logrus.Logger) *Subscribe {
 	return &Subscribe{
 		clusterID: "test-cluster",
 		clientID:  "order-suscriber",
 		channel:   "order-notification",
+		logger:    logging.Init(),
 	}
 }
 
 func (sb *Subscribe) SubscribeToChannel() (*order.Order, error) {
+	sb.logger.Infof("Connecting to the channel with\nclusterID: %s clientID: %s\n", sb.clusterID, sb.clientID)
 	sc, err := stan.Connect(sb.clusterID, sb.clientID)
 	var newOrder order.Order
 	if err != nil {
