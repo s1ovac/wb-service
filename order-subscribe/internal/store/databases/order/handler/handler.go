@@ -39,7 +39,6 @@ func NewHandler(ctx context.Context, repository *order.Repository, logger *logru
 
 func (h *handler) Register(ctx context.Context, router *httprouter.Router) {
 	router.GET(orderURL, h.GetOrderByUUID)
-	h.subscriber.SubscribeToChannel(ctx)
 }
 
 func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

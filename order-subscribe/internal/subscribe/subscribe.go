@@ -22,7 +22,7 @@ type Subscriber struct {
 
 func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool) *Subscriber {
 	return &Subscriber{
-		clusterID:  "test-cluster",
+		clusterID:  "test-cluster2",
 		clientID:   "order-suscriber",
 		channel:    "order-notification",
 		logger:     logger,
@@ -33,7 +33,7 @@ func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool)
 
 func (sb *Subscriber) SubscribeToChannel(ctx context.Context) error {
 	sb.logger.Infof("Connecting to the channel with\nclusterID: %s clientID: %s\n", sb.clusterID, sb.clientID)
-	sc, err := stan.Connect(sb.clusterID, sb.clientID)
+	sc, err := stan.Connect(sb.clusterID, sb.clientID, stan.NatsURL("nats://localhost:4222"))
 	var newOrder order.Order
 	if err != nil {
 		return fmt.Errorf("problem with connecting to channel: %s", err)
