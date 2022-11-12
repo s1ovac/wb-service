@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -13,6 +15,7 @@ import (
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order/handler"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
+	"github.com/s1ovac/order-subscribe/internal/subscribe"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,24 +23,29 @@ func main() {
 	logger := logging.Init()
 	router := httprouter.New()
 	logger.Info("create router")
-	// sb := subscribe.New(logger)
-	// newOrder, err := sb.SubscribeToChannel()
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
 	cfgDataBase := config.NewStorageConfig()
 	cfgServer := config.NewServerConfig()
-	postgreSQL, err := postgresql.NewClient(context.TODO(), 3, cfgDataBase)
+	ctx, cancel := context.WithCancel(context.Background())
+	postgreSQL, err := postgresql.NewClient(ctx, 3, cfgDataBase)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
+	sb := subscribe.New(logger, rep, postgreSQL)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		oscall := <-c
+		logger.Info("system call:%+v", oscall)
+		cancel()
+	}()
+
 	ch := cache.NewCache(rep)
-	if err := ch.InitCache(context.TODO()); err != nil {
+	if err := ch.InitCache(ctx); err != nil {
 		logger.Fatal(err)
 	}
-	orderHandler := handler.NewHandler(&rep, logger, ch)
-	orderHandler.Register(router)
+	orderHandler := handler.NewHandler(ctx, &rep, logger, ch, sb)
+	orderHandler.Register(ctx, router)
 	start(router, logger, cfgServer)
 }
 

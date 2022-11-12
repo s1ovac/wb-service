@@ -11,6 +11,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
+	"github.com/s1ovac/order-subscribe/internal/subscribe"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,26 +20,30 @@ const (
 )
 
 type handler struct {
-	order  order.Repository
-	logger *logrus.Logger
-	cache  *cache.Cache
+	order      order.Repository
+	logger     *logrus.Logger
+	cache      *cache.Cache
+	subscriber *subscribe.Subscriber
+	context    context.Context
 }
 
-func NewHandler(repository *order.Repository, logger *logrus.Logger, cache *cache.Cache) *handler {
+func NewHandler(ctx context.Context, repository *order.Repository, logger *logrus.Logger, cache *cache.Cache, subscriber *subscribe.Subscriber) *handler {
 	return &handler{
-		order:  *repository,
-		logger: logger,
-		cache:  cache,
+		order:      *repository,
+		logger:     logger,
+		cache:      cache,
+		subscriber: subscriber,
+		context:    ctx,
 	}
 }
 
-func (h *handler) Register(router *httprouter.Router) {
+func (h *handler) Register(ctx context.Context, router *httprouter.Router) {
 	router.GET(orderURL, h.GetOrderByUUID)
-
+	h.subscriber.SubscribeToChannel(ctx)
 }
 
 func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	order, err := h.cache.GetCache(context.TODO(), params.ByName("id"))
+	order, err := h.cache.GetCache(h.context, params.ByName("id"))
 	var pgErr *pgconn.PgError
 	if errors.Is(err, pgx.ErrNoRows) || errors.As(err, &pgErr) {
 		w.WriteHeader(http.StatusNotFound)
