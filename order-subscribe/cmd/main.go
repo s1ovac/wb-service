@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
+	"github.com/s1ovac/order-subscribe/internal/store/databases/order/handler"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/postgresql"
 	"github.com/sirupsen/logrus"
 )
@@ -30,20 +32,11 @@ func main() {
 		logger.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
-	// err = rep.Create(context.TODO(), newOrder, postgreSQL)
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
-	// orders, err := rep.FindAll(context.TODO())
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
-	// c := cache.NewCache(newOrder)
-	// err = c.InitCache(newOrder.OrderUID)
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
-	orderHandler := order.NewHandler(&rep, logger)
+	ch := cache.NewCache(rep)
+	if err := ch.InitCache(context.TODO()); err != nil {
+		logger.Fatal(err)
+	}
+	orderHandler := handler.NewHandler(&rep, logger, ch)
 	orderHandler.Register(router)
 	start(router, logger, cfgServer)
 }

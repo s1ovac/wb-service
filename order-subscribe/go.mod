@@ -14,7 +14,6 @@ require (
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
-	github.com/jackc/pgx/v5 v5.0.4 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect

@@ -73,7 +73,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 		qItem = `
 		INSERT INTO "item" (
 			"order_id",
-			"chrt_id", 
+			"chrt_id",
 			"track_number", 
 			"price", 
 			"rid", 
@@ -91,7 +91,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qOrder)))
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(qOrder)))
 	err = tx.QueryRow(
 		ctx,
 		qOrder,
@@ -109,7 +109,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qDelivery)))
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(qDelivery)))
 	_, err = tx.Exec(
 		ctx,
 		qDelivery,
@@ -125,7 +125,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qPayment)))
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(qPayment)))
 	_, err = tx.Exec(
 		ctx,
 		qPayment,
@@ -144,7 +144,7 @@ func (r *repository) Create(ctx context.Context, order *Order, conn *pgxpool.Poo
 	if err != nil {
 		return err
 	}
-	r.logger.Trace(fmt.Sprintf("SQL Query: %s", formatQuery(qItem)))
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(qItem)))
 	for _, it := range order.Items {
 		_, err = tx.Exec(
 			ctx,
@@ -209,6 +209,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		RIGHT JOIN "item" AS i ON p."order_id" = i."order_id"
 	WHERE o.order_uid = $1
 	`
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	var ord Order
 	if err := r.client.QueryRow(ctx, q, id).Scan(
 		&ord.OrderUID,
@@ -259,6 +260,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (Order, error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 	itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 	if err != nil {
 		return Order{}, err
@@ -295,6 +297,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		o."order_uid",
 		o."track_number",
 		o."entry",
+		d."order_id",
 		d."name",
 		d."phone",
 		d."zip",
@@ -302,6 +305,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		d."address",
 		d."region",
 		d."email",
+		p."order_id",
 		p."transaction",
 		p."request_id",
 		p."currency",
@@ -325,6 +329,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		JOIN "delivery" AS d ON o."order_uid" = d."order_id"
 		JOIN "payment" AS p ON d."order_id" = p."order_id"
 	`
+	r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(q)))
 	rows, err := r.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -337,6 +342,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 			&ord.OrderUID,
 			&ord.TrackNumber,
 			&ord.Entry,
+			&ord.Delivery.OrderID,
 			&ord.Delivery.Name,
 			&ord.Delivery.Phone,
 			&ord.Delivery.Zip,
@@ -344,6 +350,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 			&ord.Delivery.Address,
 			&ord.Delivery.Region,
 			&ord.Delivery.Email,
+			&ord.Payment.OrderID,
 			&ord.Payment.Transaction,
 			&ord.Payment.RequestID,
 			&ord.Payment.Currency,
@@ -369,7 +376,8 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 
 		iq := `
 		SELECT 
-			"id", 
+			"id",
+			"order_id", 
 			"chrt_id",
 			"track_number",
 			"price",
@@ -384,6 +392,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 		FROM "item" AS i
 		WHERE "order_id" = $1
 		`
+		r.logger.Info(fmt.Sprintf("SQL Query: %s", formatQuery(iq)))
 		itemRows, err := r.client.Query(ctx, iq, ord.OrderUID)
 		if err != nil {
 			return nil, err
@@ -395,6 +404,7 @@ func (r *repository) FindAll(ctx context.Context) (o []Order, err error) {
 
 			err = itemRows.Scan(
 				&item.ID,
+				&item.OrderID,
 				&item.ChrtID,
 				&item.TrackNumber,
 				&item.Price,

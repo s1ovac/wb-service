@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -8,29 +10,47 @@ import (
 )
 
 type Cache struct {
-	model *order.Order
-	cache *cache.Cache
+	repository order.Repository
+	cache      *cache.Cache
 }
 
-func NewCache(model *order.Order) *Cache {
+func NewCache(rep order.Repository) *Cache {
 	return &Cache{
-		model: model,
-		cache: cache.New(5*time.Minute, 10*time.Minute),
+		repository: rep,
+		cache:      cache.New(5*time.Minute, 10*time.Minute),
 	}
 }
 
-func (c *Cache) InitCache(orderID string) error {
-	err := c.cache.Add(orderID, c.model, cache.DefaultExpiration)
+func (c *Cache) InitCache(ctx context.Context) error {
+	orders, err := c.repository.FindAll(ctx)
 	if err != nil {
 		return err
+	}
+	for _, order := range orders {
+		_, found := c.cache.Get(order.OrderUID)
+		if !found {
+			if err := c.cache.Add(order.OrderUID, order, cache.DefaultExpiration); err != nil {
+				return err
+			}
+		}
+
 	}
 	return nil
 }
 
-func (c *Cache) Cache(k string) *order.Order {
-	ord, found := c.cache.Get(k)
+func (c *Cache) GetCache(ctx context.Context, k string) (order.Order, error) {
+	foo, found := c.cache.Get(k)
 	if !found {
-		return nil
+		var o order.Order
+		o, err := c.repository.FindOne(ctx, k)
+		if err != nil {
+			return order.Order{}, err
+		}
+		return o, err
 	}
-	return ord.(*order.Order)
+	o, ok := foo.(order.Order)
+	if !ok {
+		return order.Order{}, errors.New("undefined type of order")
+	}
+	return o, nil
 }
