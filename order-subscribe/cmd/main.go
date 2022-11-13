@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/nats-io/stan.go"
 	"github.com/s1ovac/order-subscribe/internal/cache"
 	"github.com/s1ovac/order-subscribe/internal/pkg/logging"
 	"github.com/s1ovac/order-subscribe/internal/store/config"
@@ -39,6 +40,15 @@ func main() {
 		logger.Info("system call:%+v", oscall)
 		cancel()
 	}()
+	conn, err := stan.Connect(sb.ClusterID, sb.ClientID, stan.NatsURL("nats://localhost:4222"))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer conn.Close()
+
+	if _, err = conn.Subscribe(sb.Channel, sb.CreateOrder, stan.StartWithLastReceived()); err != nil {
+		return
+	}
 
 	ch := cache.NewCache(rep)
 	if err := ch.InitCache(ctx); err != nil {

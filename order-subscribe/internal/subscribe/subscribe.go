@@ -3,7 +3,6 @@ package subscribe
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/nats-io/stan.go"
@@ -12,9 +11,9 @@ import (
 )
 
 type Subscriber struct {
-	clusterID  string
-	clientID   string
-	channel    string
+	ClusterID  string
+	ClientID   string
+	Channel    string
 	logger     *logrus.Logger
 	repository order.Repository
 	conn       *pgxpool.Pool
@@ -22,35 +21,24 @@ type Subscriber struct {
 
 func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool) *Subscriber {
 	return &Subscriber{
-		clusterID:  "test-cluster2",
-		clientID:   "order-suscriber",
-		channel:    "order-notification",
+		ClusterID:  "test-cluster",
+		ClientID:   "order-suscriber",
+		Channel:    "order-notification",
 		logger:     logger,
 		repository: repository,
 		conn:       conn,
 	}
 }
 
-func (sb *Subscriber) SubscribeToChannel(ctx context.Context) error {
-	sb.logger.Infof("Connecting to the channel with\nclusterID: %s clientID: %s\n", sb.clusterID, sb.clientID)
-	sc, err := stan.Connect(sb.clusterID, sb.clientID, stan.NatsURL("nats://localhost:4222"))
-	var newOrder order.Order
-	if err != nil {
-		return fmt.Errorf("problem with connecting to channel: %s", err)
+func (sb *Subscriber) CreateOrder(m *stan.Msg) {
+	order := order.Order{}
+	if err := json.Unmarshal(m.Data, &order); err != nil {
+		sb.logger.Error(err)
+		return
 	}
-	defer sc.Close()
+	if err := sb.repository.Create(context.TODO(), &order, sb.conn); err != nil {
+		sb.logger.Error(err)
+		return
+	}
 
-	_, err = sc.Subscribe(sb.channel, func(orderMsg *stan.Msg) {
-		if err := json.Unmarshal(orderMsg.Data, &newOrder); err != nil {
-			sb.logger.Warning("Cannot unmarshal data from nats-streaming-server")
-		}
-	}, stan.StartWithLastReceived())
-	if err != nil {
-		return fmt.Errorf("problem with reading channel: %s", err)
-	}
-	if err := sb.repository.Create(ctx, &newOrder, sb.conn); err != nil {
-		sb.logger.Error("can't subscribe to nats-streaming-channel")
-		return err
-	}
-	return nil
 }
