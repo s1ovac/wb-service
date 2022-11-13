@@ -7,17 +7,20 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
+	"github.com/sirupsen/logrus"
 )
 
 type Cache struct {
 	repository order.Repository
 	cache      *cache.Cache
+	logger     *logrus.Logger
 }
 
-func NewCache(rep order.Repository) *Cache {
+func NewCache(rep order.Repository, logger *logrus.Logger) *Cache {
 	return &Cache{
 		repository: rep,
 		cache:      cache.New(5*time.Minute, 10*time.Minute),
+		logger:     logger,
 	}
 }
 
@@ -39,13 +42,16 @@ func (c *Cache) InitCache(ctx context.Context) error {
 }
 
 func (c *Cache) GetCache(ctx context.Context, k string) (order.Order, error) {
+	c.logger.Info("getting order from cache")
 	foo, found := c.cache.Get(k)
 	if !found {
+		c.logger.Info("order not found in cache")
 		var o order.Order
 		o, err := c.repository.FindOne(ctx, k)
 		if err != nil {
 			return order.Order{}, err
 		}
+		c.logger.Info("adding new order to the cache")
 		if err := c.cache.Add(k, o, cache.DefaultExpiration); err != nil {
 			return order.Order{}, err
 		}

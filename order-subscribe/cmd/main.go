@@ -29,7 +29,7 @@ func main() {
 		logger.Fatal(err)
 	}
 	rep := order.NewRepository(db)
-	ch := cache.NewCache(rep)
+	ch := cache.NewCache(rep, logger)
 	if err := ch.InitCache(ctx); err != nil {
 		logger.Fatal(err)
 	}
