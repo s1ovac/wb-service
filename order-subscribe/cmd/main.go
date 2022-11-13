@@ -56,10 +56,10 @@ func main() {
 	}
 	orderHandler := handler.NewHandler(ctx, &rep, logger, ch, sb)
 	orderHandler.Register(ctx, router)
-	start(ctx, router, logger, cfgServer, sb)
+	start(ctx, router, logger, cfgServer)
 }
 
-func start(ctx context.Context, router *httprouter.Router, logger *logrus.Logger, config *config.ServerConfig, sub *subscribe.Subscriber) {
+func start(ctx context.Context, router *httprouter.Router, logger *logrus.Logger, config *config.ServerConfig) {
 	listener, err := net.Listen(config.Protocol, config.BindAddress)
 	if err != nil {
 		panic(err)
