@@ -46,6 +46,9 @@ func (c *Cache) GetCache(ctx context.Context, k string) (order.Order, error) {
 		if err != nil {
 			return order.Order{}, err
 		}
+		if err := c.cache.Add(k, o, cache.DefaultExpiration); err != nil {
+			return order.Order{}, err
+		}
 		return o, err
 	}
 	o, ok := foo.(order.Order)
