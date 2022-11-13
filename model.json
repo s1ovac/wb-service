@@ -1,6 +1,6 @@
 {
   "order_uid": "",
-  "track_number": "123123",
+  "track_number": "228",
   "entry": "WBIL",
   "delivery": {
     "name": "Test Testov",
@@ -12,6 +12,7 @@
     "email": "test@gmail.com"
  },
   "payment": {
+    "transaction": "something",
     "request_id": "2",
     "currency": "USD",
     "provider": "wbpay",
@@ -25,7 +26,7 @@
   "items": [
     {
       "chrt_id": 9934930,
-      "track_number": "",
+      "track_number": "228",
       "price": 453,
       "rid": "ab4219087a764ae0btest",
       "name": "Mascaras",
@@ -38,7 +39,7 @@
     },
     {
       "chrt_id": 9934932,
-      "track_number": "123123",
+      "track_number": "228",
       "price": 501,
       "rid": "ab4219087a764ae0btest2",
       "name": "Mascaras2",
@@ -51,7 +52,7 @@
     }
   ],
   "locale": "en",
-  "internal_signature": "123",
+  "internal_signature": "1",
   "customer_id": "test",
   "delivery_service": "meest",
   "shardkey": "9",

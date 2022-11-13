@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/nats-io/stan.go"
 	"github.com/s1ovac/order-subscribe/internal/store/databases/order"
@@ -39,10 +40,8 @@ func (sb *Subscriber) CreateOrder(m *stan.Msg) {
 		sb.logger.Error(err)
 		return
 	}
-	if order.Payment.RequestID == "" || order.InternalSignature == "" {
-		sb.logger.Error("Some fields are empty")
-		return
-	}
+	validate := validator.New()
+	err = validate.Struct(order)
 	if err != nil {
 		sb.logger.Error(err)
 		return
