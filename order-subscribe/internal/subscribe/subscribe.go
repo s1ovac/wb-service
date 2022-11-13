@@ -17,9 +17,10 @@ type Subscriber struct {
 	logger     *logrus.Logger
 	repository order.Repository
 	conn       *pgxpool.Pool
+	ctx        context.Context
 }
 
-func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool) *Subscriber {
+func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool, ctx context.Context) *Subscriber {
 	return &Subscriber{
 		ClusterID:  "test-cluster",
 		ClientID:   "order-suscriber",
@@ -27,16 +28,26 @@ func New(logger *logrus.Logger, repository order.Repository, conn *pgxpool.Pool)
 		logger:     logger,
 		repository: repository,
 		conn:       conn,
+		ctx:        ctx,
 	}
 }
 
 func (sb *Subscriber) CreateOrder(m *stan.Msg) {
 	order := order.Order{}
-	if err := json.Unmarshal(m.Data, &order); err != nil {
+	err := json.Unmarshal(m.Data, &order)
+	if err != nil {
 		sb.logger.Error(err)
 		return
 	}
-	if err := sb.repository.Create(context.TODO(), &order, sb.conn); err != nil {
+	if order.Payment.RequestID == "" || order.InternalSignature == "" {
+		sb.logger.Error("Some fields are empty")
+		return
+	}
+	if err != nil {
+		sb.logger.Error(err)
+		return
+	}
+	if err := sb.repository.Create(sb.ctx, &order, sb.conn); err != nil {
 		sb.logger.Error(err)
 		return
 	}

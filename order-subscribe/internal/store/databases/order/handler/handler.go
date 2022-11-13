@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/julienschmidt/httprouter"
 	"github.com/s1ovac/order-subscribe/internal/cache"
@@ -43,8 +42,7 @@ func (h *handler) Register(ctx context.Context, router *httprouter.Router) {
 
 func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	order, err := h.cache.GetCache(h.context, params.ByName("id"))
-	var pgErr *pgconn.PgError
-	if errors.Is(err, pgx.ErrNoRows) || errors.As(err, &pgErr) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		w.WriteHeader(http.StatusNotFound)
 		html, err := template.ParseFiles("/home/s1ovac/github.com/wb-service/order-subscribe/view/notfound.html")
 		if err != nil {

@@ -57,3 +57,8 @@ func (c *Cache) GetCache(ctx context.Context, k string) (order.Order, error) {
 	}
 	return o, nil
 }
+
+func (c *Cache) CheckCache(k string) bool {
+	_, found := c.cache.Get(k)
+	return found
+}

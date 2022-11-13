@@ -32,7 +32,11 @@ func main() {
 		logger.Fatal(err)
 	}
 	rep := order.NewRepository(postgreSQL)
-	sb := subscribe.New(logger, rep, postgreSQL)
+	ch := cache.NewCache(rep)
+	if err := ch.InitCache(ctx); err != nil {
+		logger.Fatal(err)
+	}
+	sb := subscribe.New(logger, rep, postgreSQL, ctx)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
@@ -48,11 +52,6 @@ func main() {
 
 	if _, err = conn.Subscribe(sb.Channel, sb.CreateOrder, stan.StartWithLastReceived()); err != nil {
 		return
-	}
-
-	ch := cache.NewCache(rep)
-	if err := ch.InitCache(ctx); err != nil {
-		logger.Fatal(err)
 	}
 	orderHandler := handler.NewHandler(ctx, &rep, logger, ch, sb)
 	orderHandler.Register(ctx, router)
