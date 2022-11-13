@@ -40,6 +40,7 @@ func NewHandler(ctx context.Context, repository *order.Repository, logger *logru
 
 func (h *handler) Register(ctx context.Context, router *httprouter.Router) {
 	router.GET(orderURL, h.GetOrderByUUID)
+	router.GET("/static/style.css", h.StaticCSS)
 }
 
 func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -94,4 +95,8 @@ func (h *handler) GetOrderByUUID(w http.ResponseWriter, r *http.Request, params 
 	if err != nil {
 		h.logger.Fatal("Can't execute html view file")
 	}
+}
+
+func (h *handler) StaticCSS(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	http.ServeFile(w, r, "/home/s1ovac/github.com/wb-service/order-subscribe/static/style.css")
 }
