@@ -57,16 +57,3 @@ func main() {
 
 	server.Start()
 }
-
-// func start(ctx context.Context, router *httprouter.Router, logger *logrus.Logger, config *config.ServerConfig) {
-// 	listener, err := net.Listen(config.Protocol, config.BindAddress)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	server := http.Server{
-// 		Handler:      router,
-// 		WriteTimeout: 15 * time.Second,
-// 		ReadTimeout:  15 * time.Second,
-// 	}
-// 	logger.Fatal(server.Serve(listener))
-// }

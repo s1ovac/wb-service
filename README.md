@@ -39,3 +39,25 @@
         <li>Nats-streaming разверните локально ( не путать с Nats ) &#9989;</li>
     </ul>
 </body>
+
+#### Запуск сервиса
+```shell
+make start-docker
+make run-subscriber
+```
+#### Запуск издателя (Docker должен быть запущен `make start-docker`)
+```shell
+make run-publisher
+```
+#### Остановка Docker
+```shell
+make stop-docker
+```
+
+### Работа:
+___
+
+По умолчанию доступ к данным в кэше через http осуществляется следующим запросом:
+`localhost:8080/orders/:id`
+
+Для записи данных в NATS необходимо указать путь к файлу JSON с моделью. Данные для проверки лежат в корневой дирректории.
