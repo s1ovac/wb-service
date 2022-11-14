@@ -34,6 +34,7 @@
             <td>{{.TrackNumber}}</td>
             <td>{{.Entry}}</td>
             <td>
+              <table>
                 <tr>{{.Delivery.OrderID}}</tr>
                 <tr>{{.Delivery.Name}}</tr>
                 <tr>{{.Delivery.Phone}}</tr>
@@ -42,8 +43,10 @@
                 <tr>{{.Delivery.Address}}</tr>
                 <tr>{{.Delivery.Region}}</tr>
                 <tr>{{.Delivery.Email}}</tr>
+              </table>
             </td>
             <td>
+              <table>
                 <tr>{{.Payment.OrderID}}</tr>
                 <tr>{{.Payment.Transaction}}</tr>
                 <tr>{{.Payment.RequestID}}</tr>
@@ -55,6 +58,7 @@
                 <tr>{{.Payment.DeliveryCost}}</tr>
                 <tr>{{.Payment.GoodsTotal}}</tr>
                 <tr>{{.Payment.CustomFee}}</tr>
+              </table>
             </td>
             <td>
               {{range .Items}}

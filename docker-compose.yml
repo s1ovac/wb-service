@@ -1,0 +1,42 @@
+version: '3.5'
+
+services:
+  db:
+    image: postgres:15
+    networks:
+      new:
+        aliases:
+          - database
+    environment:
+      POSTGRES_USER: s1ovac
+      POSTGRES_PASSWORD: Qwerqwerasd228
+      POSTGRES_DB: wb-service
+    ports:
+      - "5432:5432"
+  nats:
+    image: nats-streaming:latest
+    ports:
+      - "4222:4222"
+
+  nats-ui:
+    image: piotrpersona/nats-streaming-ui:latest
+    ports:
+      - "8282:8282"
+    environment:
+      STAN_URL: "http://nats:4222"
+      STAN_MONITOR_URL: "http://nats:8222"
+      STAN_CLUSTER: test-cluster
+  migrate:
+    image: migrate/migrate
+
+    depends_on:
+      - db
+    networks:
+      - new
+    volumes:
+      - /home/s1ovac/github.com/wb-service/migration:/migration
+    command: ["-path", "/migration", "-database",  "postgresql://s1ovac:Qwerqwerasd228@database:5432/wb-service?sslmode=disable", "up"]
+    links: 
+      - db
+networks:
+      new:
